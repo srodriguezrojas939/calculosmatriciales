@@ -13,7 +13,8 @@
             --white: #FFFFFF;
             --black: #000000;
             --border: #DDDDDD;
-            --text-gray: #666666;
+            --dark-gray: #333333;
+            --light-gray: #E0E0E0;
         }
 
         body { 
@@ -23,11 +24,11 @@
             display: flex; 
             justify-content: center; 
             padding: 15px; 
-            color: #333;
+            color: var(--dark-gray);
         }
 
         .container { 
-            max-width: 1000px; 
+            max-width: 1100px; 
             width: 100%; 
             padding: 30px; 
             background: var(--bg-gray); 
@@ -35,11 +36,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.03); 
         }
 
-        /* TIPOGRAFÍA */
         h1, h2, h3, .matrix-name { font-family: 'Playfair Display', serif; font-weight: 700; }
-        p, span, div, input, button { font-family: 'Open Sans', sans-serif; font-weight: 400; }
-        .bold { font-weight: 600; }
-
         .header { text-align: center; margin-bottom: 30px; }
         .header h1 { font-size: 34px; margin: 0; }
         .header p { font-size: 18px; font-weight: 700; font-family: 'Playfair Display'; margin: 5px 0; }
@@ -47,7 +44,7 @@
         /* GESTIÓN DE MATRICES */
         .matrix-manager { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
             gap: 20px; 
             margin-bottom: 25px; 
         }
@@ -58,21 +55,22 @@
             border-radius: 30px; 
             border: 1px solid var(--border); 
             position: relative;
-            transition: 0.3s;
         }
 
         .matrix-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
         .matrix-name { font-size: 26px; }
         
         .btn-delete { 
-            background: #ffeded; color: #ff4d4d; border: none; 
+            background: var(--black); color: var(--white); border: none; 
             width: 28px; height: 28px; border-radius: 50%; 
             cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+            transition: 0.3s;
         }
+        .btn-delete:hover { background: var(--dark-gray); }
 
-        .matrix-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 15px; font-size: 13px; }
+        .matrix-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 15px; font-size: 13px; font-weight: 600; }
         .matrix-controls input { 
-            width: 40px; padding: 4px; border-radius: 8px; border: 1px solid #eee; text-align: center; font-weight: 600;
+            width: 40px; padding: 4px; border-radius: 8px; border: 1px solid var(--light-gray); text-align: center; font-weight: 600;
         }
 
         .matrix-grid { display: grid; gap: 6px; justify-content: center; }
@@ -85,20 +83,21 @@
         .ops-section { background: var(--white); padding: 25px; border-radius: 35px; border: 1px solid var(--border); margin-bottom: 30px; }
         .pill-input { 
             width: 100%; padding: 18px 25px; border-radius: 50px; border: 1px solid #e0e0e0; 
-            font-size: 16px; font-weight: 600; box-sizing: border-box; outline: none; transition: 0.3s;
+            font-size: 16px; font-weight: 600; box-sizing: border-box; outline: none;
         }
-        .pill-input:focus { border-color: var(--black); box-shadow: 0 0 0 4px rgba(0,0,0,0.05); }
 
         .btn-main { 
             width: 100%; padding: 18px; background: var(--black); color: var(--white); 
             border: none; border-radius: 50px; font-weight: 700; cursor: pointer; margin-top: 15px; transition: 0.3s; 
         }
 
-        /* RESULTADOS */
-        .res-container { margin-bottom: 30px; }
-        .res-card { background: var(--white); padding: 25px; border-radius: 30px; border: 2px solid var(--black); margin-top: 10px; }
+        /* DASHBOARD DE DATOS Y RESULTADOS */
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        
+        .res-card { background: var(--white); padding: 25px; border-radius: 30px; border: 1px solid var(--border); height: 100%; box-sizing: border-box; }
+        .res-card.highlight { border: 2px solid var(--black); }
         .res-card h2 { margin-top: 0; font-size: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .res-content { font-size: 18px; font-weight: 600; overflow-x: auto; }
+        .res-content { font-size: 15px; font-weight: 600; line-height: 1.6; color: var(--dark-gray); }
 
         /* GRÁFICAS */
         .graph-wrapper { background: var(--white); border-radius: 40px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 30px; position: relative; }
@@ -106,7 +105,7 @@
             padding: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; 
             border-bottom: 1px solid #f0f0f0; background: #fafafa;
         }
-        .select-pill { padding: 8px 15px; border-radius: 20px; border: 1px solid #ddd; background: white; font-weight: 600; outline: none; cursor: pointer; }
+        .select-pill { padding: 8px 15px; border-radius: 20px; border: 1px solid #ddd; background: white; font-weight: 600; cursor: pointer; }
         
         #plot { height: 500px; width: 100%; }
 
@@ -115,7 +114,7 @@
         .pill-btn-white { 
             background: var(--white); border: 1px solid #e0e0e0; border-radius: 50px; 
             padding: 12px 30px; display: flex; align-items: center; gap: 10px; 
-            cursor: pointer; font-weight: 700; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+            cursor: pointer; font-weight: 700; transition: 0.3s;
         }
         .pill-btn-white:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.06); }
 
@@ -130,12 +129,8 @@
         }
         .close-modal { position: absolute; top: 20px; right: 25px; cursor: pointer; font-size: 24px; font-weight: bold; }
 
-        /* MOBILE OPTIMIZATION */
-        @media (max-width: 600px) {
-            .container { padding: 20px; border-radius: 30px; }
-            .header h1 { font-size: 26px; }
-            .matrix-grid input { width: 45px; height: 40px; font-size: 13px; }
-            .pill-input { padding: 15px; font-size: 14px; }
+        @media (max-width: 800px) {
+            .dashboard { grid-template-columns: 1fr; }
             #plot { height: 350px; }
         }
     </style>
@@ -151,24 +146,32 @@
     <div class="matrix-manager" id="manager"></div>
     
     <div style="text-align: center; margin-bottom: 25px;">
-        <button class="pill-btn-white" onclick="addNewMatrix()" style="margin: 0 auto;">+ Añadir Matriz</button>
+        <button class="pill-btn-white" onclick="addNewMatrix()">+ Añadir Matriz</button>
     </div>
 
     <div class="ops-section">
-        <input type="text" id="op-input" class="pill-input" placeholder="A + B,  A * B,  Inv(A), Det(A)...">
-        <button class="btn-main" onclick="executeCalculation()">Calcular Resultado</button>
+        <input type="text" id="op-input" class="pill-input" placeholder="Ej: A + B, A * B, Det(A) + Det(B)...">
+        <button class="btn-main" onclick="processAll()">Ejecutar Acción</button>
     </div>
 
-    <div class="res-container" id="res-section" style="display: none;">
+    <div class="dashboard">
         <div class="res-card">
-            <h2>Resultado Final</h2>
-            <div id="res-data" class="res-content"></div>
+            <h2 id="basic-data-title">Datos Básicos: Matriz A</h2>
+            <div id="basic-data-content" class="res-content">
+                Cargando datos...
+            </div>
+        </div>
+        <div class="res-card highlight">
+            <h2>Resultado de Operación</h2>
+            <div id="op-result-content" class="res-content">
+                Esperando comando...
+            </div>
         </div>
     </div>
 
     <div class="graph-wrapper">
         <div class="graph-tools">
-            <span class="bold">Visualizar:</span>
+            <span style="font-weight: 600;">Seleccionar para Análisis:</span>
             <select id="graph-select" class="select-pill" onchange="updateView()"></select>
             <select id="graph-type" class="select-pill" onchange="updateView()">
                 <option value="2d">Determinante 2D</option>
@@ -191,31 +194,27 @@
     <div class="modal-content" onclick="event.stopPropagation()">
         <span class="close-modal" onclick="toggleGuide(false)">&times;</span>
         <h2>Guía de Uso</h2>
-        <p>Bienvenido al laboratorio avanzado. Aquí tienes los comandos disponibles:</p>
+        <p>Utiliza los nombres de las matrices (A, B, C...) para operar:</p>
         <ul style="line-height: 1.8;">
-            <li><span class="bold">A + B</span> : Suma de matrices.</li>
-            <li><span class="bold">A - B</span> : Resta de matrices.</li>
-            <li><span class="bold">A * B</span> : Multiplicación matricial.</li>
-            <li><span class="bold">Inv(A)</span> : Calcula la inversa (si el determinante ≠ 0).</li>
-            <li><span class="bold">Det(A)</span> : Halla el determinante.</li>
-            <li><span class="bold">Trans(A)</span> : Transpuesta de la matriz.</li>
-            <li><span class="bold">Rango(A)</span> : Calcula el rango.</li>
-            <li><span class="bold">Resolver(A, B)</span> : Resuelve AX = B.</li>
+            <li><strong>Suma/Resta:</strong> A + B, A - B</li>
+            <li><strong>Multiplicación:</strong> A * B</li>
+            <li><strong>Combinaciones:</strong> Det(A) + Det(B)</li>
+            <li><strong>Inversa:</strong> Inv(A)</li>
+            <li><strong>Transpuesta:</strong> Trans(A)</li>
         </ul>
-        <p><small>* La matriz A es obligatoria y no puede eliminarse.</small></p>
+        <p>El recuadro <strong>Datos Básicos</strong> se actualiza automáticamente al cambiar la matriz en el selector de la gráfica.</p>
     </div>
 </div>
 
 <script>
-    let matrices = {};
     let matrixNames = ["A"];
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let lastResult = null;
+    let lastOpResult = null;
 
     function init() {
         addNewMatrix("A");
         addNewMatrix("B");
-        executeCalculation();
+        processAll();
     }
 
     function addNewMatrix(fixedName = null) {
@@ -238,7 +237,6 @@
             <div class="matrix-controls">
                 <input type="number" value="3" min="1" max="6" id="r-${name}" onchange="renderGrid('${name}')"> x 
                 <input type="number" value="3" min="1" max="6" id="c-${name}" onchange="renderGrid('${name}')">
-                <span>Tamaño</span>
             </div>
             <div id="grid-${name}" class="matrix-grid"></div>
         `;
@@ -251,6 +249,7 @@
         matrixNames = matrixNames.filter(n => n !== name);
         document.getElementById(`card-${name}`).remove();
         updateSelects();
+        processAll();
     }
 
     function renderGrid(name) {
@@ -258,11 +257,10 @@
         const c = document.getElementById(`c-${name}`).value;
         const grid = document.getElementById(`grid-${name}`);
         grid.style.gridTemplateColumns = `repeat(${c}, 1fr)`;
-        
         let html = '';
         for (let i = 0; i < r * c; i++) {
-            const val = (i % (parseInt(c)+1) === 0) ? 1 : 0; // Identidad por defecto
-            html += `<input type="number" value="${val}" class="val-${name}">`;
+            let val = (i % (parseInt(c)+1) === 0) ? 1 : 0;
+            html += `<input type="number" value="${val}" class="val-${name}" onchange="processAll()">`;
         }
         grid.innerHTML = html;
     }
@@ -284,63 +282,107 @@
         const sel = document.getElementById('graph-select');
         const current = sel.value;
         sel.innerHTML = matrixNames.map(n => `<option value="${n}">Matriz ${n}</option>`).join('');
-        sel.innerHTML += `<option value="RES">Resultado</option>`;
-        if (current) sel.value = current;
+        sel.innerHTML += `<option value="RES">Resultado de Operación</option>`;
+        sel.value = current || "A";
     }
 
-    // OPERACIONES MATRICIALES BÁSICAS
-    const MathOps = {
-        add: (A, B) => A.map((r, i) => r.map((v, j) => v + B[i][j])),
-        mul: (A, B) => A.map(row => B[0].map((_, i) => row.reduce((s, _, j) => s + row[j] * B[j][i], 0))),
+    const Linear = {
         det: (m) => {
-            if (m.length !== m[0].length) return "No cuadrada";
+            if (m.length !== m[0].length) return null;
             if (m.length === 1) return m[0][0];
             if (m.length === 2) return m[0][0]*m[1][1] - m[0][1]*m[1][0];
-            return m[0].reduce((d, c, i) => d + (i % 2 ? -1 : 1) * c * MathOps.det(m.slice(1).map(row => row.filter((_, j) => j !== i))), 0);
+            return m[0].reduce((d, c, i) => d + (i % 2 ? -1 : 1) * c * Linear.det(m.slice(1).map(row => row.filter((_, j) => j !== i))), 0);
+        },
+        rank: (m) => {
+            let mat = m.map(r => [...r]);
+            let r = mat.length, c = mat[0].length, rank = 0;
+            for (let i = 0; i < Math.min(r, c); i++) {
+                let pivot = i;
+                while (pivot < r && Math.abs(mat[pivot][i]) < 1e-9) pivot++;
+                if (pivot < r) {
+                    [mat[i], mat[pivot]] = [mat[pivot], mat[i]];
+                    for (let j = i + 1; j < r; j++) {
+                        let f = mat[j][i] / mat[i][i];
+                        for (let k = i; k < c; k++) mat[j][k] -= f * mat[i][k];
+                    }
+                    rank++;
+                }
+            }
+            return rank;
+        },
+        inv: (m) => {
+            let d = Linear.det(m);
+            if (!d || d === 0) return null;
+            const size = m.length;
+            let adj = [];
+            for (let i = 0; i < size; i++) {
+                let row = [];
+                for (let j = 0; j < size; j++) {
+                    let minor = m.filter((_, r) => r !== i).map(r => r.filter((_, c) => c !== j));
+                    row.push(((i + j) % 2 === 0 ? 1 : -1) * Linear.det(minor));
+                }
+                adj.push(row);
+            }
+            return adj[0].map((_, c) => adj.map(r => r[c] / d));
         }
     };
 
-    function executeCalculation() {
+    function processAll() {
+        // 1. Calcular Operación
         const input = document.getElementById('op-input').value.toUpperCase().replace(/\s/g, '');
-        const resSection = document.getElementById('res-section');
-        const resData = document.getElementById('res-data');
+        const opResDiv = document.getElementById('op-result-content');
         
-        let result = "Ingresa una operación (ej: A+B)";
         try {
-            const A = getMatrixData("A");
-            const B = matrixNames.includes("B") ? getMatrixData("B") : null;
-
-            if (input === "A+B" && B) result = MathOps.add(A, B);
-            else if (input === "A*B" && B) result = MathOps.mul(A, B);
-            else if (input.includes("DET(")) {
-                const n = input.match(/\(([^)]+)\)/)[1];
-                result = "Determinante: " + MathOps.det(getMatrixData(n));
+            if (input.includes("+")) {
+                const parts = input.split("+");
+                const m1 = getMatrixData(parts[0]), m2 = getMatrixData(parts[1]);
+                lastOpResult = m1.map((r, i) => r.map((v, j) => v + m2[i][j]));
+            } else if (input.includes("*")) {
+                const parts = input.split("*");
+                const m1 = getMatrixData(parts[0]), m2 = getMatrixData(parts[1]);
+                lastOpResult = m1.map(row => m2[0].map((_, i) => row.reduce((s, _, j) => s + row[j] * m2[j][i], 0)));
             } else {
-                result = A; // Por defecto mostrar A
+                lastOpResult = null;
             }
-        } catch(e) { result = "Error en la operación"; }
+        } catch(e) { lastOpResult = "Error en operación"; }
 
-        lastResult = Array.isArray(result) ? result : null;
-        resData.innerHTML = Array.isArray(result) ? 
-            result.map(r => `[ ${r.join(' | ')} ]`).join('<br>') : result;
-        resSection.style.display = "block";
+        opResDiv.innerHTML = Array.isArray(lastOpResult) ? 
+            lastOpResult.map(r => `[ ${r.map(v=>v.toFixed(1)).join(' | ')} ]`).join('<br>') : (lastOpResult || "Sin operación");
+
         updateView();
     }
 
     function updateView() {
         const target = document.getElementById('graph-select').value;
         const type = document.getElementById('graph-type').value;
-        let dataToDraw = (target === "RES" && lastResult) ? lastResult : getMatrixData(target === "RES" ? "A" : target);
-        draw(dataToDraw, type);
+        const basicTitle = document.getElementById('basic-data-title');
+        const basicContent = document.getElementById('basic-data-content');
+
+        let data = (target === "RES") ? lastOpResult : getMatrixData(target);
+        
+        if (!data || typeof data === "string") {
+            basicContent.innerHTML = "Sin datos válidos.";
+            return;
+        }
+
+        basicTitle.innerText = `Datos Básicos: ${target === "RES" ? "Resultado" : "Matriz " + target}`;
+        
+        const d = Linear.det(data);
+        const r = Linear.rank(data);
+        const i = Linear.inv(data);
+
+        basicContent.innerHTML = `
+            <strong>Determinante:</strong> ${d !== null ? d.toFixed(2) : "N/A"}<br>
+            <strong>Rango:</strong> ${r}<br>
+            <strong>Inversa:</strong><br>
+            ${i ? i.map(row => `[${row.map(v=>v.toFixed(2)).join('|')}]`).join('<br>') : "No existe (Det=0 o no cuadrada)"}
+        `;
+
+        draw(data, type);
     }
 
     function draw(m, type) {
         const traces = [];
-        const watermark = {
-            text: "√(Raiz) Cuadrada²", xref: "paper", yref: "paper", x: 0.95, y: 0.05,
-            showarrow: false, font: { family: "Playfair Display", size: 16, color: "#eee", weight: "bold" }
-        };
-
         if (type === '2d') {
             const v1 = [m[0][0]||0, (m[1]?m[1][0]:0)];
             const v2 = [m[0][1]||0, (m[1]?m[1][1]:0)];
@@ -351,34 +393,32 @@
                 fillcolor: 'rgba(0,0,0,0.1)', line: {color: 'black', width: 2}
             });
         } else {
-            // MEJORA 3D: Paralelepípedo sólido con Mesh3d para entender el volumen
-            const v1 = [m[0][0]||0, (m[1]?m[1][0]:0), (m[2]?m[2][0]:0)];
-            const v2 = [m[0][1]||0, (m[1]?m[1][1]:0), (m[2]?m[2][1]:0)];
-            const v3 = [m[0][2]||0, (m[1]?m[1][2]:0), (m[2]?m[2][2]:0)];
+            // 3D MEJORADO: Paralelepípedo
+            const v = [
+                [m[0][0]||0, (m[1]?m[1][0]:0), (m[2]?m[2][0]:0)],
+                [m[0][1]||0, (m[1]?m[1][1]:0), (m[2]?m[2][1]:0)],
+                [m[0][2]||0, (m[1]?m[1][2]:0), (m[2]?m[2][2]:0)]
+            ];
 
-            // 8 Vértices
             const pts = [
-                [0,0,0], v1, v2, v3, 
-                [v1[0]+v2[0], v1[1]+v2[1], v1[2]+v2[2]],
-                [v1[0]+v3[0], v1[1]+v3[1], v1[2]+v3[2]],
-                [v2[0]+v3[0], v2[1]+v3[1], v2[2]+v3[2]],
-                [v1[0]+v2[0]+v3[0], v1[1]+v2[1]+v3[1], v1[2]+v2[2]+v3[2]]
+                [0,0,0], v[0], v[1], v[2],
+                [v[0][0]+v[1][0], v[0][1]+v[1][1], v[0][2]+v[1][2]],
+                [v[0][0]+v[2][0], v[0][1]+v[2][1], v[0][2]+v[2][2]],
+                [v[1][0]+v[2][0], v[1][1]+v[2][1], v[1][2]+v[2][2]],
+                [v[0][0]+v[1][0]+v[2][0], v[0][1]+v[1][1]+v[2][1], v[0][2]+v[1][2]+v[2][2]]
             ];
 
             traces.push({
                 type: 'mesh3d',
                 x: pts.map(p => p[0]), y: pts.map(p => p[1]), z: pts.map(p => p[2]),
-                alphahull: 0, opacity: 0.2, color: 'black'
+                alphahull: 0, opacity: 0.15, color: 'black'
             });
 
-            // Aristas para definición
-            const lines = [
-                [0,1], [0,2], [0,3], [1,4], [1,5], [2,4], [2,6], [3,5], [3,6], [4,8], [5,8], [6,8]
-            ];
-            lines.forEach(l => {
+            const edges = [[0,1],[0,2],[0,3],[1,4],[1,5],[2,4],[2,6],[3,5],[3,6],[4,8],[5,8],[6,8]];
+            edges.forEach(e => {
                 traces.push({
                     type: 'scatter3d', mode: 'lines',
-                    x: [pts[l[0]][0], pts[l[1]][0]], y: [pts[l[0]][1], pts[l[1]][1]], z: [pts[l[0]][2], pts[l[1]][2]],
+                    x: [pts[e[0]][0], pts[e[1]][0]], y: [pts[e[0]][1], pts[e[1]][1]], z: [pts[e[0]][2], pts[e[1]][2]],
                     line: {color: 'black', width: 4}
                 });
             });
@@ -386,8 +426,12 @@
 
         const layout = {
             margin: {l:0, r:0, t:0, b:0}, paper_bgcolor: 'white',
-            showlegend: false, annotations: [watermark],
-            scene: { xaxis: {title: 'X'}, yaxis: {title: 'Y'}, zaxis: {title: 'Z'} }
+            showlegend: false,
+            scene: { xaxis: {showgrid:false}, yaxis: {showgrid:false}, zaxis: {showgrid:false} },
+            annotations: [{
+                text: "√(Raiz) Cuadrada²", xref: "paper", yref: "paper", x: 0.95, y: 0.05,
+                showarrow: false, font: { family: "Playfair Display", size: 16, color: "#eee", weight: "bold" }
+            }]
         };
         Plotly.newPlot('plot', traces, layout, {responsive: true, displayModeBar: false});
     }
@@ -395,13 +439,11 @@
     async function downloadPNG() {
         const plot = document.getElementById('plot');
         await Plotly.relayout(plot, { 'annotations[0].font.size': 60, 'annotations[0].font.color': 'rgba(0,0,0,0.05)' });
-        await Plotly.downloadImage(plot, { format: 'png', width: 1200, height: 900, filename: 'calculo_matricial' });
+        await Plotly.downloadImage(plot, { format: 'png', width: 1200, height: 900, filename: 'analisis_matricial' });
         Plotly.relayout(plot, { 'annotations[0].font.size': 16, 'annotations[0].font.color': '#eee' });
     }
 
-    function toggleGuide(show) {
-        document.getElementById('guide-modal').style.display = show ? 'flex' : 'none';
-    }
+    function toggleGuide(show) { document.getElementById('guide-modal').style.display = show ? 'flex' : 'none'; }
 
     window.onload = init;
 </script>
