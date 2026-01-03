@@ -29,7 +29,8 @@
         .matrix-controls { display: flex; gap: 8px; align-items: center; margin-bottom: 15px; font-size: 13px; font-weight: 600; }
         .matrix-controls input { width: 40px; padding: 4px; border-radius: 8px; border: 1px solid #ddd; text-align: center; }
         .matrix-grid { display: grid; gap: 6px; justify-content: center; }
-        .matrix-grid input { width: 50px; height: 40px; text-align: center; border-radius: 10px; border: 1px solid #eee; background: #fafafa; font-weight: 600; }
+        /* Cambiado a texto para soportar fracciones */
+        .matrix-grid input { width: 50px; height: 40px; text-align: center; border-radius: 10px; border: 1px solid #eee; background: #fafafa; font-weight: 600; font-size: 12px; }
 
         /* OPERACIONES */
         .ops-section { background: var(--white); padding: 25px; border-radius: 35px; border: 1px solid var(--border); margin-bottom: 30px; }
@@ -48,7 +49,7 @@
         .graph-tools { padding: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; border-bottom: 1px solid #f0f0f0; background: #fafafa; }
         #plot { height: 500px; width: 100%; }
 
-        /* GUÍA DESPLEGABLE */
+        /* GUÍA */
         .guide-container { display: none; background: white; padding: 30px; border-radius: 30px; border: 1px solid #ddd; margin-top: 15px; text-align: left; }
         .guide-container h3 { margin-top: 0; }
 
@@ -110,14 +111,12 @@
 
     <div id="guide-section" class="guide-container">
         <h3>Guía de Comandos</h3>
-        <p style="font-family: 'Open Sans';">Escribe los comandos en el recuadro superior respetando las mayúsculas:</p>
+        <p>Escribe los comandos respetando las mayúsculas (A, B, C...):</p>
         <ul style="line-height: 2;">
-            <li><strong>A + B</strong>: Suma de matrices.</li>
-            <li><strong>A * B</strong>: Multiplicación.</li>
-            <li><strong>Inv(A)</strong>: Matriz inversa.</li>
-            <li><strong>Trans(A)</strong>: Transpuesta.</li>
-            <li><strong>Det(A)</strong>: Valor numérico del determinante.</li>
-            <li><strong>Resolver(A, B)</strong>: Resuelve el sistema AX = B (B debe ser una matriz de una columna).</li>
+            <li><strong>A + B</strong> / <strong>A - B</strong> / <strong>A * B</strong></li>
+            <li><strong>Inv(A)</strong>: Inversa | <strong>Trans(A)</strong>: Transpuesta</li>
+            <li><strong>Det(A)</strong>: Determinante (puedes sumar Det(A)+Det(B))</li>
+            <li><strong>Resolver(A, B)</strong>: Sistema AX = B</li>
         </ul>
     </div>
 </div>
@@ -127,26 +126,30 @@
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     let lastResult = null;
 
-    // --- CORRECCIÓN DE NOMBRES ---
-    function getNextLetter() {
-        for (let char of alphabet) {
-            if (!matrixNames.includes(char)) return char;
+    // --- UTILIDADES ---
+    function parseFraction(str) {
+        if (!str) return 0;
+        if (str.includes('/')) {
+            const p = str.split('/');
+            return parseFloat(p[0]) / parseFloat(p[1]);
         }
+        return parseFloat(str);
+    }
+
+    function getNextLetter() {
+        for (let char of alphabet) { if (!matrixNames.includes(char)) return char; }
         return "?";
     }
 
     function addNewMatrix(name = null) {
         const letter = name || getNextLetter();
         if (matrixNames.includes(letter)) return;
-        
         matrixNames.push(letter);
         matrixNames.sort();
-
         const card = document.createElement('div');
         card.className = 'matrix-card';
         card.id = `card-${letter}`;
         const delBtn = letter === 'A' ? '' : `<button class="btn-delete" onclick="removeMatrix('${letter}')">×</button>`;
-
         card.innerHTML = `
             <div class="matrix-header"><span class="matrix-name">${letter}</span>${delBtn}</div>
             <div class="matrix-controls">
@@ -175,20 +178,21 @@
         let html = '';
         for (let i = 0; i < r * c; i++) {
             let val = (i % (parseInt(c)+1) === 0) ? 1 : 0;
-            html += `<input type="number" value="${val}" class="val-${letter}" onchange="updateUI()">`;
+            html += `<input type="text" value="${val}" class="val-${letter}" onchange="updateUI()">`;
         }
         grid.innerHTML = html;
         updateUI();
     }
 
     function getMatrix(letter) {
+        if (!matrixNames.includes(letter)) return null;
         const r = parseInt(document.getElementById(`r-${letter}`).value);
         const c = parseInt(document.getElementById(`c-${letter}`).value);
         const inputs = document.querySelectorAll(`.val-${letter}`);
         let data = [];
         for (let i = 0; i < r; i++) {
             let row = [];
-            for (let j = 0; j < c; j++) row.push(parseFloat(inputs[i * c + j].value) || 0);
+            for (let j = 0; j < c; j++) row.push(parseFraction(inputs[i * c + j].value) || 0);
             data.push(row);
         }
         return data;
@@ -197,13 +201,14 @@
     // --- MOTOR MATEMÁTICO ---
     const MathLib = {
         det: (m) => {
-            if (m.length !== m[0].length) return null;
+            if (!m || m.length !== m[0].length) return null;
             if (m.length === 1) return m[0][0];
             if (m.length === 2) return m[0][0]*m[1][1] - m[0][1]*m[1][0];
             return m[0].reduce((d, c, i) => d + (i % 2 ? -1 : 1) * c * MathLib.det(m.slice(1).map(r => r.filter((_, j) => j !== i))), 0);
         },
         trans: (m) => m[0].map((_, i) => m.map(row => row[i])),
         add: (a, b) => a.map((r, i) => r.map((v, j) => v + b[i][j])),
+        sub: (a, b) => a.map((r, i) => r.map((v, j) => v - b[i][j])),
         mul: (a, b) => a.map(r => b[0].map((_, i) => r.reduce((s, _, j) => s + r[j] * b[j][i], 0))),
         inv: (m) => {
             let d = MathLib.det(m); if (!d) return null;
@@ -233,37 +238,49 @@
         },
         solve: (a, b) => {
             let ai = MathLib.inv(a);
-            return ai ? MathLib.mul(ai, b) : "Sin solución única";
+            return (ai && b) ? MathLib.mul(ai, b) : "Sin solución única";
         }
     };
 
+    // --- EVALUADOR DINÁMICO ---
     function executeOp() {
-        const raw = document.getElementById('op-input').value.trim();
+        const input = document.getElementById('op-input').value.trim();
         const out = document.getElementById('op-content');
-        try {
-            let result;
-            if (raw.includes('+')) {
-                const p = raw.split('+'); result = MathLib.add(getMatrix(p[0].trim()), getMatrix(p[1].trim()));
-            } else if (raw.includes('*')) {
-                const p = raw.split('*'); result = MathLib.mul(getMatrix(p[0].trim()), getMatrix(p[1].trim()));
-            } else if (raw.startsWith('Inv(')) {
-                result = MathLib.inv(getMatrix(raw.match(/\(([^)]+)\)/)[1]));
-            } else if (raw.startsWith('Trans(')) {
-                result = MathLib.trans(getMatrix(raw.match(/\(([^)]+)\)/)[1]));
-            } else if (raw.startsWith('Det(')) {
-                result = "Determinante: " + MathLib.det(getMatrix(raw.match(/\(([^)]+)\)/)[1])).toFixed(2);
-            } else if (raw.startsWith('Resolver(')) {
-                const p = raw.match(/\(([^)]+)\)/)[1].split(',');
-                result = MathLib.solve(getMatrix(p[0].trim()), getMatrix(p[1].trim()));
-            } else { result = "Comando no reconocido"; }
+        if (!input) return;
 
-            lastResult = Array.isArray(result) ? result : null;
-            out.innerHTML = Array.isArray(result) ? result.map(r => `[ ${r.map(v=>v.toFixed(2)).join(' | ')} ]`).join('<br>') : result;
-        } catch(e) { out.innerHTML = "Error: Verifica tamaños o nombres"; }
+        try {
+            // Reemplazo de funciones por llamadas a MathLib
+            let expr = input
+                .replace(/Inv\(/g, 'MathLib.inv(')
+                .replace(/Trans\(/g, 'MathLib.trans(')
+                .replace(/Det\(/g, 'MathLib.det(')
+                .replace(/Resolver\(/g, 'MathLib.solve(');
+
+            // Inyectar matrices A, B, C... como variables locales
+            const scope = {};
+            matrixNames.forEach(name => { scope[name] = getMatrix(name); });
+            
+            // Función para evaluar dentro del scope de matrices
+            const evalInScope = new Function('MathLib', 'matrices', `
+                const { ${matrixNames.join(',')} } = matrices;
+                return ${expr};
+            `);
+
+            const result = evalInScope(MathLib, scope);
+
+            if (Array.isArray(result)) {
+                lastResult = result;
+                out.innerHTML = result.map(r => `[ ${r.map(v => typeof v === 'number' ? v.toFixed(2) : v).join(' | ')} ]`).join('<br>');
+            } else {
+                out.innerHTML = `Resultado: <span style="font-size:18px; color:black;">${typeof result === 'number' ? result.toFixed(4) : result}</span>`;
+            }
+        } catch (e) {
+            out.innerHTML = `<span style="color:red;">Error en expresión: Verifica sintaxis y tamaños</span>`;
+        }
         updateUI();
     }
 
-    // --- CORRECCIÓN 3D Y UI ---
+    // --- GRÁFICAS ---
     function updateUI() {
         const target = document.getElementById('graph-select').value;
         const type = document.getElementById('graph-type').value;
@@ -282,31 +299,50 @@
 
     function drawGraph(m, type) {
         const traces = [];
-        if (type === '2d') {
-            const v1 = [m[0][0]||0, m[1]?m[1][0]:0], v2 = [m[0][1]||0, m[1]?m[1][1]:0];
-            traces.push({ x: [0, v1[0], v1[0]+v2[0], v2[0], 0], y: [0, v1[1], v1[1]+v2[1], v2[1], 0], fill: 'toself', type: 'scatter', line: {color: 'black'} });
-        } else {
-            // VOLUMEN 3D REAL (Paralelepípedo)
-            const v1 = [m[0][0]||0, m[1]?m[1][0]:0, m[2]?m[2][0]:0];
-            const v2 = [m[0][1]||0, m[1]?m[1][1]:0, m[2]?m[2][1]:0];
-            const v3 = [m[0][2]||0, m[1]?m[1][2]:0, m[2]?m[2][2]:0];
-
-            const p = [[0,0,0], v1, v2, v3, 
-                [v1[0]+v2[0], v1[1]+v2[1], v1[2]+v2[2]], 
-                [v1[0]+v3[0], v1[1]+v3[1], v1[2]+v3[2]], 
-                [v2[0]+v3[0], v2[1]+v3[1], v2[2]+v3[2]], 
-                [v1[0]+v2[0]+v3[0], v1[1]+v2[1]+v3[1], v1[2]+v2[2]+v3[2]]];
-
-            traces.push({ type: 'mesh3d', x: p.map(a=>a[0]), y: p.map(a=>a[1]), z: p.map(a=>a[2]), alphahull: 0, opacity: 0.2, color: 'black' });
-            const edges = [[0,1],[0,2],[0,3],[1,4],[1,5],[2,4],[2,6],[3,5],[3,6],[4,8],[5,8],[6,8]];
-            edges.forEach(e => traces.push({ type: 'scatter3d', mode: 'lines', x:[p[e[0]][0], p[e[1]][0]], y:[p[e[0]][1], p[e[1]][1]], z:[p[e[0]][2], p[e[1]][2]], line:{color:'black', width:4} }));
-        }
-
         const layout = { 
             margin:{l:0,r:0,t:0,b:0}, paper_bgcolor:'white', showlegend:false,
             scene: { xaxis:{title:'X'}, yaxis:{title:'Y'}, zaxis:{title:'Z'} },
-            annotations: [{ text: "√(Raiz) Cuadrada²", xref: "paper", yref: "paper", x: 0.95, y: 0.05, showarrow: false, font: { family: "Playfair Display", size: 16, color: "#eee", weight: "bold" } }]
+            annotations: [{ text: "√(Raiz) Cuadrada²", xref: "paper", yref: "paper", x: 0.95, y: 0.05, showarrow: false, font: { family: "Playfair Display", size: 16, color: "#ddd", weight: "bold" } }]
         };
+
+        if (type === '2d') {
+            const v1 = [m[0][0]||0, m[1]?m[1][0]:0], v2 = [m[0][1]||0, m[1]?m[1][1]:0];
+            traces.push({ x: [0, v1[0], v1[0]+v2[0], v2[0], 0], y: [0, v1[1], v1[1]+v2[1], v2[1], 0], fill: 'toself', type: 'scatter', line: {color: 'black', width: 3} });
+        } else {
+            // VECTORES COLUMNA (3x3)
+            const v1 = [m[0][0]||0, m[1]?m[1][0]||0:0, m[2]?m[2][0]||0:0];
+            const v2 = [m[0][1]||0, m[1]?m[1][1]||0:0, m[2]?m[2][1]||0:0];
+            const v3 = [m[0][2]||0, m[1]?m[1][2]||0:0, m[2]?m[2][2]||0:0];
+
+            // 8 Vértices del Paralelepípedo
+            const p = [
+                [0,0,0], v1, v2, v3, 
+                [v1[0]+v2[0], v1[1]+v2[1], v1[2]+v2[2]], 
+                [v1[0]+v3[0], v1[1]+v3[1], v1[2]+v3[2]], 
+                [v2[0]+v3[0], v2[1]+v3[1], v2[2]+v3[2]], 
+                [v1[0]+v2[0]+v3[0], v1[1]+v2[1]+v3[1], v1[2]+v2[2]+v3[2]]
+            ];
+
+            // Mesh 3D para el volumen
+            traces.push({
+                type: 'mesh3d',
+                x: p.map(a=>a[0]), y: p.map(a=>a[1]), z: p.map(a=>a[2]),
+                i: [0, 0, 0, 1, 1, 2, 0, 0, 3, 3, 5, 5],
+                j: [1, 2, 3, 4, 5, 4, 1, 2, 5, 6, 7, 7],
+                k: [4, 4, 5, 7, 7, 6, 5, 6, 7, 7, 8, 8], // Simplificado para visualización
+                opacity: 0.2, color: '#000'
+            });
+
+            // Aristas del paralelepípedo
+            const edges = [[0,1],[0,2],[0,3],[1,4],[1,5],[2,4],[2,6],[3,5],[3,6],[4,7],[5,7],[6,7]];
+            edges.forEach(e => {
+                traces.push({
+                    type: 'scatter3d', mode: 'lines',
+                    x:[p[e[0]][0], p[e[1]][0]], y:[p[e[0]][1], p[e[1]][1]], z:[p[e[0]][2], p[e[1]][2]],
+                    line:{color:'black', width:4}
+                });
+            });
+        }
         Plotly.newPlot('plot', traces, layout, {responsive: true, displayModeBar: false});
     }
 
@@ -326,7 +362,7 @@
         const plot = document.getElementById('plot');
         await Plotly.relayout(plot, { 'annotations[0].font.size': 60, 'annotations[0].font.color': 'rgba(0,0,0,0.05)' });
         await Plotly.downloadImage(plot, { format: 'png', width: 1200, height: 900, filename: 'analisis_matricial' });
-        Plotly.relayout(plot, { 'annotations[0].font.size': 16, 'annotations[0].font.color': '#eee' });
+        Plotly.relayout(plot, { 'annotations[0].font.size': 16, 'annotations[0].font.color': '#ddd' });
     }
 
     window.onload = () => { addNewMatrix("A"); addNewMatrix("B"); };
