@@ -109,16 +109,77 @@
         <button class="pill-btn-white" onclick="toggleGuide()">Guía de uso</button>
     </div>
 
-    <div id="guide-section" class="guide-container">
-        <h3>Guía de Comandos</h3>
-        <p>Escribe los comandos respetando las mayúsculas (A, B, C...):</p>
-        <ul style="line-height: 2;">
-            <li><strong>A + B</strong> / <strong>A - B</strong> / <strong>A * B</strong></li>
-            <li><strong>Inv(A)</strong>: Inversa | <strong>Trans(A)</strong>: Transpuesta</li>
-            <li><strong>Det(A)</strong>: Determinante (puedes sumar Det(A)+Det(B))</li>
-            <li><strong>Resolver(A, B)</strong>: Sistema AX = B</li>
-        </ul>
+ <div id="guide-section" class="guide-container" style="line-height: 1.6; color: black; background: white; border: 1px solid black; padding: 30px; border-radius: 30px;">
+    <h3 style="font-family: 'Playfair Display', serif; font-size: 28px; border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 20px;">Guía de usos</h3>
+    
+    <p>Esta plataforma permite la gestión de matrices, el cálculo de operaciones lineales avanzadas y la visualización geométrica de sus propiedades.</p>
+
+    <h4 style="margin-top: 25px;"><u>1. Configuración de Matrices</u></h4>
+    <ul>
+        <li><strong>Añadir y Eliminar:</strong> Utilice el botón "+ Añadir Matriz" para generar nuevas variables (A, B, C...). La matriz "A" es obligatoria y no puede ser eliminada.</li>
+        <li><strong>Dimensiones:</strong> Ajuste filas y columnas mediante los selectores numéricos (máximo 5x5).</li>
+        <li><strong>Uso de Fracciones:</strong> La calculadora permite el ingreso de fracciones. Puede escribir valores como <strong>1/2</strong>, <strong>-3/4</strong> o <strong>10/3</strong> directamente en las celdas y el sistema procesará el valor exacto.</li>
+    </ul>
+
+    <h4 style="margin-top: 25px;"><u>2. Comandos Principales</u></h4>
+    <p>Ingrese los comandos en el campo de texto superior respetando el uso de mayúsculas para las variables:</p>
+    <table style="width: 100%; border-collapse: collapse; border: 1px solid black;">
+        <thead>
+            <tr style="border-bottom: 2px solid black;">
+                <th style="padding: 10px; text-align: left;">Operación</th>
+                <th style="padding: 10px; text-align: left;">Sintaxis del Comando</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid black;">Suma y Resta</td>
+                <td style="padding: 10px; border-bottom: 1px solid black;"><strong>A + B</strong> o <strong>A - B</strong></td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid black;">Multiplicación</td>
+                <td style="padding: 10px; border-bottom: 1px solid black;"><strong>A * B</strong></td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid black;">Matriz Inversa</td>
+                <td style="padding: 10px; border-bottom: 1px solid black;"><strong>Inv(A)</strong></td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid black;">Matriz Transpuesta</td>
+                <td style="padding: 10px; border-bottom: 1px solid black;"><strong>Trans(A)</strong></td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid black;">Determinante</td>
+                <td style="padding: 10px; border-bottom: 1px solid black;"><strong>Det(A)</strong></td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid black;">Sistema AX = B</td>
+                <td style="padding: 10px; border-bottom: 1px solid black;"><strong>Resolver(A, B)</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4 style="margin-top: 25px;"><u>3. Otras combinaciones permitidas</u></h4>
+    <p>El motor lógico permite realizar cálculos anidados y aritméticos complejos, tales como:</p>
+    <ul>
+        <li><strong>Operaciones con Determinantes:</strong> Puede realizar cálculos numéricos directos como <strong>Det(A) + Det(B)</strong> o <strong>Det(A) * 5</strong>.</li>
+        <li><strong>Funciones Anidadas:</strong> Es posible calcular propiedades de resultados previos, por ejemplo: <strong>Trans(Inv(A))</strong> para obtener la transpuesta de una matriz inversa.</li>
+        <li><strong>Multiplicación por Escalar:</strong> Multiplique una matriz completa por un número simple usando <strong>A * 10</strong>.</li>
+        <li><strong>Resta Progresiva:</strong> Combinaciones como <strong>A - B - C</strong> son procesadas en orden secuencial.</li>
+    </ul>
+
+    <div style="border: 2px solid black; padding: 15px; margin-top: 30px;">
+        <strong>NOTA SOBRE PRECISIÓN DE DATOS:</strong>
+        <p style="margin: 5px 0 0 0;">El apartado de <strong>Datos Básicos</strong> (panel izquierdo) ofrece un resumen rápido y redondea los valores a 1 decimal para limpieza visual. Se recomienda utilizar siempre el panel de <strong>Resultado de Operación</strong> para obtener la máxima precisión y todos los decimales disponibles en sus cálculos.</p>
     </div>
+
+    <h4 style="margin-top: 25px;"><u>4. Representación Gráfica y Determinantes</u></h4>
+    <p>Es fundamental comprender que las gráficas generadas son la representación geométrica del <strong>determinante</strong> de la matriz seleccionada:</p>
+    <ul>
+        <li><strong>En Vista 2D:</strong> Se visualiza el área del paralelogramo formado por los vectores columna. El valor de dicha área equivale al determinante de la matriz.</li>
+        <li><strong>En Vista 3D:</strong> Se visualiza el paralelepípedo (volumen) generado en el espacio. El valor de este volumen es exactamente igual al determinante de la matriz 3x3.</li>
+    </ul>
+    <p>Si el determinante es 0, la figura colapsará (no tendrá área o volumen), lo cual indica que la matriz no tiene inversa.</p>
+</div>
 </div>
 
 <script>
