@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cálculo Matriciales - √(Raiz) Cuadrada²</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Open+Sans:wght@400;600&display=swap');
 
@@ -206,9 +208,13 @@
     </div>
 
     <div class="ops-section">
-        <input type="text" id="op-input" class="pill-input" placeholder="Ej: A + B, Inv(A), Trans(B), Det(A) + Det(B), Resolver(A, B)">
-        <button class="btn-main" onclick="executeOp()">Ejecutar Acción</button>
+    <div id="math-preview" style="min-height: 60px; background: #fff; border-radius: 20px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; padding: 15px; border: 1px solid #eee; overflow-x: auto;">
+        <span style="color: #ccc;">Visualizador de operación...</span>
     </div>
+    
+    <input type="text" id="op-input" class="pill-input" placeholder="Ej: A + B, Inv(A), Trans(B)..." onkeyup="updatePreview()">
+    <button class="btn-main" onclick="executeOp()">Ejecutar Acción</button>
+</div>
 
     <div class="dashboard">
    <div class="res-card">
@@ -222,15 +228,18 @@
     <div id="basic-content" class="res-content">Cargando datos...</div>
 </div>
         <div class="res-card highlight">
-            <h2>Resultado de Operación</h2>
-            <div id="op-content" class="res-content">Esperando comando...</div>
-        </div>
+    <h2>Resultado de Operación</h2>
+    <div id="op-result-math" style="min-height: 80px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; background: #fdfdfd; border-radius: 20px; border: 1px dashed #ddd; overflow-x: auto; padding: 10px;">
+        <span style="color: #ccc;">Esperando resultado...</span>
+    </div>
+    <div id="op-content" class="res-content" style="display: none;"></div>
+</div>
     </div>
 
     <div class="graph-wrapper">
         <div class="graph-tools">
             <span style="font-weight: 600;">Analizar:</span>
-            <select id="graph-select" class="pill-input" style="width: auto; padding: 8px 15px;" onchange="updateUI()"></select>
+            <select id="graph-select" class="pill-input" style="width: auto; padding: 8px 15px;" onchange=""syncSelectors(this.value)""></select>
             <select id="graph-type" class="pill-input" style="width: auto; padding: 8px 15px;" onchange="updateUI()">
                 <option value="2d">Vista 2D (Área)</option>
                 <option value="3d" selected>Vista 3D (Volumen)</option>
@@ -335,9 +344,10 @@
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     let lastResult = null;
 
-    // --- UTILIDADES ---
+    // --- UTILIDADES DE PARSEO ---
     function parseFraction(str) {
         if (!str) return 0;
+        str = str.toString().trim();
         if (str.includes('/')) {
             const p = str.split('/');
             return parseFloat(p[0]) / parseFloat(p[1]);
@@ -350,6 +360,7 @@
         return "?";
     }
 
+    // --- GESTIÓN DE MATRICES ---
     function addNewMatrix(name = null) {
         const letter = name || getNextLetter();
         if (matrixNames.includes(letter)) return;
@@ -358,7 +369,7 @@
         const card = document.createElement('div');
         card.className = 'matrix-card';
         card.id = `card-${letter}`;
-        const delBtn = letter === 'A' ? '' : `<button class="btn-delete" onclick="removeMatrix('${letter}')">×</button>`;
+        const delBtn = (letter === 'A' || letter === 'B') ? '' : `<button class="btn-delete" onclick="removeMatrix('${letter}')">×</button>`;
         card.innerHTML = `
             <div class="matrix-header"><span class="matrix-name">${letter}</span>${delBtn}</div>
             <div class="matrix-controls">
@@ -380,24 +391,22 @@
     }
 
     function renderGrid(letter) {
-    const r = parseInt(document.getElementById(`r-${letter}`).value);
-    const c = parseInt(document.getElementById(`c-${letter}`).value);
-    const grid = document.getElementById(`grid-${letter}`);
-    grid.style.gridTemplateColumns = `repeat(${c}, 1fr)`;
-    
-    let html = '';
-    for (let i = 0; i < r; i++) {
-        for (let j = 0; j < c; j++) {
-            let val = (i === j) ? 1 : 0; // Identidad por defecto
-            // Añadimos data-r (fila), data-c (columna) y data-m (matriz)
-            html += `<input type="text" value="${val}" class="val-${letter}" 
-                     data-m="${letter}" data-r="${i}" data-c="${j}" 
-                     onchange="updateUI()">`;
+        const r = parseInt(document.getElementById(`r-${letter}`).value);
+        const c = parseInt(document.getElementById(`c-${letter}`).value);
+        const grid = document.getElementById(`grid-${letter}`);
+        grid.style.gridTemplateColumns = `repeat(${c}, 1fr)`;
+        let html = '';
+        for (let i = 0; i < r; i++) {
+            for (let j = 0; j < c; j++) {
+                let val = (i === j) ? 1 : 0;
+                html += `<input type="text" value="${val}" class="val-${letter}" 
+                         data-m="${letter}" data-r="${i}" data-c="${j}" 
+                         onchange="updateUI()">`;
+            }
         }
+        grid.innerHTML = html;
+        updateUI();
     }
-    grid.innerHTML = html;
-    updateUI();
-}
 
     function getMatrix(letter) {
         if (!matrixNames.includes(letter)) return null;
@@ -413,10 +422,10 @@
         return data;
     }
 
-    // --- MOTOR MATEMÁTICO ---
+    // --- MOTOR MATEMÁTICO (MathLib) ---
     const MathLib = {
         det: (m) => {
-            if (!m || m.length !== m[0].length) return null;
+            if (!m || !m[0] || m.length !== m[0].length) return null;
             if (m.length === 1) return m[0][0];
             if (m.length === 2) return m[0][0]*m[1][1] - m[0][1]*m[1][0];
             return m[0].reduce((d, c, i) => d + (i % 2 ? -1 : 1) * c * MathLib.det(m.slice(1).map(r => r.filter((_, j) => j !== i))), 0);
@@ -424,10 +433,13 @@
         trans: (m) => m[0].map((_, i) => m.map(row => row[i])),
         add: (a, b) => a.map((r, i) => r.map((v, j) => v + b[i][j])),
         sub: (a, b) => a.map((r, i) => r.map((v, j) => v - b[i][j])),
-        mul: (a, b) => a.map(r => b[0].map((_, i) => r.reduce((s, _, j) => s + r[j] * b[j][i], 0))),
+        mul: (a, b) => {
+            if (typeof b === 'number') return a.map(r => r.map(v => v * b));
+            if (typeof a === 'number') return b.map(r => r.map(v => v * a));
+            return a.map(r => b[0].map((_, i) => r.reduce((s, _, j) => s + r[j] * b[j][i], 0)));
+        },
         inv: (m) => {
-            let d = MathLib.det(m); if (!d) return null;
-            const size = m.length;
+            let d = MathLib.det(m); if (!d || Math.abs(d) < 1e-10) return null;
             let adj = m.map((_, i) => m.map((_, j) => {
                 let minor = m.filter((_, r) => r !== i).map(r => r.filter((_, c) => c !== j));
                 return ((i+j)%2===0?1:-1) * MathLib.det(minor);
@@ -457,46 +469,98 @@
         }
     };
 
-    // --- EVALUADOR DINÁMICO ---
-    function executeOp() {
+    // --- TRADUCTOR DE EXPRESIONES (SOLUCIÓN AL ERROR) ---
+    function translateExpr(input) {
+    // 1. Traducir funciones básicas (esto ya soporta anidación natural)
+    // Ej: Trans(Inv(A)) -> MathLib.trans(MathLib.inv(A))
+    let res = input
+        .replace(/Inv\(/gi, 'MathLib.inv(')
+        .replace(/Trans\(/gi, 'MathLib.trans(')
+        .replace(/Det\(/gi, 'MathLib.det(')
+        .replace(/Resolver\(/gi, 'MathLib.solve(');
+
+    const ops = [
+        { symbol: '*', func: 'MathLib.mul' },
+        { symbol: '+', func: 'MathLib.add' },
+        { symbol: '-', func: 'MathLib.sub' }
+    ];
+
+    // 2. Resolver operadores binarios (+, -, *) respetando paréntesis
+    // Ejecutamos el bucle varias veces para ir desde el paréntesis más interno al más externo
+    for (let i = 0; i < 5; i++) { 
+        ops.forEach(op => {
+            // Esta Regex ahora detecta: Matrices, Números, Funciones ya traducidas o bloques entre paréntesis
+            const operand = `([A-Z]|\\d+\\.?\\d*|MathLib\\.[a-z]+\\(.+?\\)|\\([^()]+\\))`;
+            const pattern = new RegExp(`${operand}\\s*\\${op.symbol}\\s*${operand}`, 'g');
+            
+            res = res.replace(pattern, (match, p1, p2) => {
+                // Limpiamos paréntesis innecesarios para la llamada a la función
+                const a = p1.startsWith('(') && p1.endsWith(')') ? p1.slice(1, -1) : p1;
+                const b = p2.startsWith('(') && p2.endsWith(')') ? p2.slice(1, -1) : p2;
+                return `${op.func}(${a},${b})`;
+            });
+        });
+    }
+    return res;
+}
+
+    // --- EJECUCIÓN ---
+ function executeOp() {
         const input = document.getElementById('op-input').value.trim();
-        const out = document.getElementById('op-content');
+        const outMath = document.getElementById('op-result-math');
         if (!input) return;
 
         try {
-            // Reemplazo de funciones por llamadas a MathLib
-            let expr = input
-                .replace(/Inv\(/g, 'MathLib.inv(')
-                .replace(/Trans\(/g, 'MathLib.trans(')
-                .replace(/Det\(/g, 'MathLib.det(')
-                .replace(/Resolver\(/g, 'MathLib.solve(');
-
-            // Inyectar matrices A, B, C... como variables locales
+            const expr = translateExpr(input);
             const scope = {};
             matrixNames.forEach(name => { scope[name] = getMatrix(name); });
             
-            // Función para evaluar dentro del scope de matrices
             const evalInScope = new Function('MathLib', 'matrices', `
                 const { ${matrixNames.join(',')} } = matrices;
                 return ${expr};
             `);
 
             const result = evalInScope(MathLib, scope);
+            let latexResult = "";
 
             if (Array.isArray(result)) {
                 lastResult = result;
-                out.innerHTML = result.map(r => `[ ${r.map(v => typeof v === 'number' ? v.toFixed(2) : v).join(' | ')} ]`).join('<br>');
+                latexResult = "\\text{Resultado} = \\begin{pmatrix}";
+                result.forEach(row => {
+                    latexResult += row.map(v => typeof v === 'number' ? v.toFixed(2).replace('.00', '') : v).join(' & ') + ' \\\\ ';
+                });
+                latexResult += "\\end{pmatrix}";
+                
+                // --- ADICIÓN PARA ACTUALIZAR ANÁLISIS ---
+                if (typeof syncSelectors === 'function') syncSelectors("RES");
+                // ----------------------------------------
+
+            } else if (typeof result === 'number') {
+                // --- ADICIÓN: LIMPIAR RESULTADO ANTERIOR SI ES SÓLO UN NÚMERO ---
+                lastResult = null; 
+                // ---------------------------------------------------------------
+                
+                latexResult = `\\text{Resultado numérico} = ${result.toFixed(4).replace(/\.?0+$/, "")}`;
+                
+                // --- ADICIÓN PARA ACTUALIZAR ANÁLISIS ---
+                if (typeof syncSelectors === 'function') syncSelectors("RES");
+                // ----------------------------------------
+
             } else {
-                out.innerHTML = `Resultado: <span style="font-size:18px; color:black;">${typeof result === 'number' ? result.toFixed(4) : result}</span>`;
+                lastResult = null;
+                latexResult = `\\text{${result}}`;
             }
+
+            katex.render(latexResult, outMath, { throwOnError: false, displayMode: true });
         } catch (e) {
-            out.innerHTML = `<span style="color:red;">Error en expresión: Verifica sintaxis y tamaños</span>`;
+            outMath.innerHTML = `<span style="color:red; font-size:14px;">Error: Verifica dimensiones (ej: A*B requiere filas=cols) o sintaxis.</span>`;
         }
+        
+        // Esto asegura que la interfaz se refresque
         updateUI();
     }
 
-    // --- GRÁFICAS ---
-   
+    // --- GRÁFICAS (RECUPERADAS) ---
     function drawGraph(m, type) {
         const traces = [];
         const layout = { 
@@ -509,158 +573,186 @@
             const v1 = [m[0][0]||0, m[1]?m[1][0]:0], v2 = [m[0][1]||0, m[1]?m[1][1]:0];
             traces.push({ x: [0, v1[0], v1[0]+v2[0], v2[0], 0], y: [0, v1[1], v1[1]+v2[1], v2[1], 0], fill: 'toself', type: 'scatter', line: {color: 'black', width: 3} });
         } else {
-            // VECTORES COLUMNA (3x3)
             const v1 = [m[0][0]||0, m[1]?m[1][0]||0:0, m[2]?m[2][0]||0:0];
             const v2 = [m[0][1]||0, m[1]?m[1][1]||0:0, m[2]?m[2][1]||0:0];
             const v3 = [m[0][2]||0, m[1]?m[1][2]||0:0, m[2]?m[2][2]||0:0];
-
-            // 8 Vértices del Paralelepípedo
-            const p = [
-                [0,0,0], v1, v2, v3, 
-                [v1[0]+v2[0], v1[1]+v2[1], v1[2]+v2[2]], 
-                [v1[0]+v3[0], v1[1]+v3[1], v1[2]+v3[2]], 
-                [v2[0]+v3[0], v2[1]+v3[1], v2[2]+v3[2]], 
-                [v1[0]+v2[0]+v3[0], v1[1]+v2[1]+v3[1], v1[2]+v2[2]+v3[2]]
-            ];
-
-            // Mesh 3D para el volumen
-            traces.push({
-                type: 'mesh3d',
-                x: p.map(a=>a[0]), y: p.map(a=>a[1]), z: p.map(a=>a[2]),
-                i: [0, 0, 0, 1, 1, 2, 0, 0, 3, 3, 5, 5],
-                j: [1, 2, 3, 4, 5, 4, 1, 2, 5, 6, 7, 7],
-                k: [4, 4, 5, 7, 7, 6, 5, 6, 7, 7, 8, 8], // Simplificado para visualización
-                opacity: 0.2, color: '#000'
-            });
-
-            // Aristas del paralelepípedo
+            const p = [[0,0,0], v1, v2, v3, [v1[0]+v2[0], v1[1]+v2[1], v1[2]+v2[2]], [v1[0]+v3[0], v1[1]+v3[1], v1[2]+v3[2]], [v2[0]+v3[0], v2[1]+v3[1], v2[2]+v3[2]], [v1[0]+v2[0]+v3[0], v1[1]+v2[1]+v3[1], v1[2]+v2[2]+v3[2]]];
+            traces.push({ type: 'mesh3d', x: p.map(a=>a[0]), y: p.map(a=>a[1]), z: p.map(a=>a[2]), i: [0, 0, 0, 1, 1, 2, 0, 0, 3, 3, 5, 5], j: [1, 2, 3, 4, 5, 4, 1, 2, 5, 6, 7, 7], k: [4, 4, 5, 7, 7, 6, 5, 6, 7, 7, 8, 8], opacity: 0.2, color: '#000' });
             const edges = [[0,1],[0,2],[0,3],[1,4],[1,5],[2,4],[2,6],[3,5],[3,6],[4,7],[5,7],[6,7]];
-            edges.forEach(e => {
-                traces.push({
-                    type: 'scatter3d', mode: 'lines',
-                    x:[p[e[0]][0], p[e[1]][0]], y:[p[e[0]][1], p[e[1]][1]], z:[p[e[0]][2], p[e[1]][2]],
-                    line:{color:'black', width:4}
-                });
-            });
+            edges.forEach(e => { traces.push({ type: 'scatter3d', mode: 'lines', x:[p[e[0]][0], p[e[1]][0]], y:[p[e[0]][1], p[e[1]][1]], z:[p[e[0]][2], p[e[1]][2]], line:{color:'black', width:4} }); });
         }
         Plotly.newPlot('plot', traces, layout, {responsive: true, displayModeBar: false});
     }
 
-   function updateSelectOptions() {
-    const sBasic = document.getElementById('basic-select');
-    const sGraph = document.getElementById('graph-select');
-    
-    // Mantener el valor actual o poner "A" por defecto si es la primera vez
-    let currentVal = sBasic.value || "A";
+    // --- INTERFAZ Y VISUALIZACIÓN ---
+    function updateUI() {
+        const target = document.getElementById('basic-select').value || "A";
+        const type = document.getElementById('graph-type').value;
+        let data = (target === "RES") ? lastResult : getMatrix(target);
+        
+        if (data && Array.isArray(data)) {
+            const d = MathLib.det(data);
+            document.getElementById('basic-content').innerHTML = `
+                <div style="margin-bottom:8px;"><b>Determinante:</b> ${d !== null ? d.toFixed(2) : 'N/A'}</div>
+                <div style="margin-bottom:8px;"><b>Rango:</b> ${MathLib.rank(data)}</div>
+                <div style="margin-top:10px;"><b>Inversa:</b></div>
+                <div style="font-family:monospace; background:#f9f9f9; padding:10px; border-radius:15px; margin-top:5px; font-size:12px; border: 1px solid #eee;">
+                    ${MathLib.inv(data) ? MathLib.inv(data).map(r => `[${r.map(v=>v.toFixed(1)).join('|')}]`).join('<br>') : 'No existe'}
+                </div>
+            `;
+            drawGraph(data, type);
+        }
+    }
 
-    const options = matrixNames.map(n => `<option value="${n}">Matriz ${n}</option>`).join('') + `<option value="RES">Resultado</option>`;
-    
-    sBasic.innerHTML = options;
-    sGraph.innerHTML = options;
+    function updateSelectOptions() {
+        const sBasic = document.getElementById('basic-select');
+        const sGraph = document.getElementById('graph-select');
+        let currentVal = sBasic.value || "A";
+        const options = matrixNames.map(n => `<option value="${n}">Matriz ${n}</option>`).join('') + `<option value="RES">Resultado</option>`;
+        
+        sBasic.innerHTML = options;
+        sGraph.innerHTML = options;
+        
+        // Sincronizamos el valor inicial en ambos
+        const newVal = matrixNames.includes(currentVal) || currentVal === "RES" ? currentVal : "A";
+        sBasic.value = newVal;
+        sGraph.value = newVal; 
+        
+        const targetVal = (matrixNames.includes(currentVal) || currentVal === "RES") ? currentVal : "A";
+        sBasic.value = targetVal;
+        sGraph.value = targetVal;
+    }
 
-    sBasic.value = currentVal;
-    sGraph.value = currentVal;
-}
+    function syncSelectors(val) {
+        document.getElementById('basic-select').value = val;
+        document.getElementById('graph-select').value = val;
+        updateUI();
+    }
 
-function syncSelectors(val) {
-    document.getElementById('basic-select').value = val;
-    document.getElementById('graph-select').value = val;
-    updateUI();
-}
+    function matrixToLatex(name, type = 'p') {
+        const data = getMatrix(name);
+        if (!data) return name;
+        const env = type === 'det' ? 'vmatrix' : 'pmatrix';
+        let latex = `\\begin{${env}}`;
+        data.forEach(row => { latex += row.map(v => v.toFixed(1).replace('.0', '')).join(' & ') + ' \\\\ '; });
+        latex += `\\end{${env}}`;
+        return latex;
+    }
 
-function updateUI() {
-    const target = document.getElementById('basic-select').value || "A";
-    const type = document.getElementById('graph-type').value;
-    let data = (target === "RES") ? lastResult : getMatrix(target);
+  function updatePreview() {
+    const input = document.getElementById('op-input').value.trim();
+    const preview = document.getElementById('math-preview');
+    if (!input) { preview.innerHTML = '<span style="color: #ccc;">...</span>'; return; }
 
-    if (data && Array.isArray(data)) {
-        const d = MathLib.det(data);
-        document.getElementById('basic-content').innerHTML = `
-            <div style="margin-bottom:8px;"><b>Determinante:</b> ${d !== null ? d.toFixed(2) : 'N/A'}</div>
-            <div style="margin-bottom:8px;"><b>Rango:</b> ${MathLib.rank(data)}</div>
-            <div style="margin-top:10px;"><b>Inversa:</b></div>
-            <div style="font-family:monospace; background:#f9f9f9; padding:10px; border-radius:15px; margin-top:5px; font-size:12px; border: 1px solid #eee;">
-                ${MathLib.inv(data) ? MathLib.inv(data).map(r => `[${r.map(v=>v.toFixed(1)).join('|')}]`).join('<br>') : 'No existe'}
-            </div>
-        `;
-        drawGraph(data, type);
+    try {
+        let latex = input;
+        
+        // Aplicamos reemplazos de funciones de forma global
+        latex = latex.replace(/Det\((.+?)\)/gi, (m, content) => `\\left| ${content} \\right|`);
+        latex = latex.replace(/Inv\((.+?)\)/gi, (m, content) => `\\left( ${content} \\right)^{-1}`);
+        latex = latex.replace(/Trans\((.+?)\)/gi, (m, content) => `\\left( ${content} \\right)^{T}`);
+        latex = latex.replace(/Resolver\((.+?),\s*(.+?)\)/gi, (m, a, b) => `${a}^{-1} \\cdot ${b}`);
+
+        // Reemplazar las letras de matrices por sus tablas LaTeX al final
+        matrixNames.forEach(name => {
+            const reg = new RegExp(`\\b${name}\\b`, 'g');
+            latex = latex.replace(reg, matrixToLatex(name));
+        });
+
+        latex = latex.replace(/\*/g, ' \\cdot ');
+        
+        katex.render(latex, preview, { throwOnError: false, displayMode: true });
+    } catch (e) {
+        // Error silencioso mientras el usuario termina de escribir
     }
 }
-
-// AL CARGAR LA PÁGINA: Forzar selección de "A"
-window.onload = () => { 
-    addNewMatrix("A"); 
-    addNewMatrix("B"); 
-    syncSelectors("A"); // Esto garantiza que al abrir todo esté en Matriz A
-};
-
     function toggleGuide() {
         const g = document.getElementById('guide-section');
         g.style.display = g.style.display === 'block' ? 'none' : 'block';
     }
 
-    async function downloadPNG() {
-        const plot = document.getElementById('plot');
-        await Plotly.relayout(plot, { 'annotations[0].font.size': 60, 'annotations[0].font.color': 'rgba(0,0,0,0.05)' });
-        await Plotly.downloadImage(plot, { format: 'png', width: 1200, height: 900, filename: 'analisis_matricial' });
-        Plotly.relayout(plot, { 'annotations[0].font.size': 16, 'annotations[0].font.color': '#ddd' });
-    }
+ async function downloadPNG() {
+    const originalPlot = document.getElementById('plot');
+    
+    // 1. Creamos un contenedor temporal invisible
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px'; // Lo sacamos de la vista
+    document.body.appendChild(tempDiv);
 
-document.addEventListener('keydown', function(e) {
-    const active = document.activeElement;
-    if (active.tagName !== 'INPUT' || !active.hasAttribute('data-m')) return;
+    // 2. Clonamos la configuración de la gráfica actual
+    const data = JSON.parse(JSON.stringify(originalPlot.data));
+    const layout = JSON.parse(JSON.stringify(originalPlot.layout));
 
-    const m = active.getAttribute('data-m');
-    let r = parseInt(active.getAttribute('data-r'));
-    let c = parseInt(active.getAttribute('data-c'));
-    const maxR = parseInt(document.getElementById(`r-${m}`).value);
-    const maxC = parseInt(document.getElementById(`c-${m}`).value);
+    // 3. Aplicamos la marca de agua GRUESA solo a la copia
+    layout.annotations[0].font.size = 70; // Tamaño grande para el PNG
+    layout.annotations[0].font.weight = 900; // Grosor máximo
+    layout.annotations[0].font.color = 'rgba(0,0,0,0.07)'; // Muy sutil
+    
+    // 4. Renderizamos la gráfica en el contenedor invisible
+    await Plotly.newPlot(tempDiv, data, layout);
 
-    let nextR = r, nextC = c, nextM = m;
+    // 5. Descargamos la imagen desde el contenedor oculto
+    await Plotly.downloadImage(tempDiv, {
+        format: 'png',
+        width: 1200,
+        height: 900,
+        filename: 'analisis_matricial_pro'
+    });
 
-    switch(e.key) {
-        case 'ArrowRight':
-            if (c < maxC - 1) nextC++;
-            else { // Salto a la siguiente matriz si existe
-                const nextIdx = matrixNames.indexOf(m) + 1;
-                if (nextIdx < matrixNames.length) {
-                    nextM = matrixNames[nextIdx];
-                    nextR = r; nextC = 0;
-                }
-            }
-            break;
-        case 'ArrowLeft':
-            if (c > 0) nextC--;
-            else { // Salto a la matriz anterior
-                const prevIdx = matrixNames.indexOf(m) - 1;
-                if (prevIdx >= 0) {
-                    nextM = matrixNames[prevIdx];
-                    nextR = r; nextC = parseInt(document.getElementById(`c-${nextM}`).value) - 1;
-                }
-            }
-            break;
-        case 'ArrowDown':
-            if (r < maxR - 1) nextR++;
-            break;
-        case 'ArrowUp':
-            if (r > 0) nextR--;
-            break;
-        case 'Enter':
-            executeOp(); // Ejecuta la operación al dar Enter
+    // 6. Limpiamos la memoria eliminando el temporal
+    Plotly.purge(tempDiv);
+    tempDiv.remove();
+}
+
+    // --- NAVEGACIÓN POR TECLADO ---
+    document.addEventListener('keydown', function(e) {
+        const active = document.activeElement;
+        if (active.tagName !== 'INPUT' || !active.hasAttribute('data-m')) {
+            if (e.key === 'Enter') executeOp();
             return;
-        default: return;
+        }
+        const m = active.getAttribute('data-m');
+        let r = parseInt(active.getAttribute('data-r'));
+        let c = parseInt(active.getAttribute('data-c'));
+        const maxR = parseInt(document.getElementById(`r-${m}`).value);
+        const maxC = parseInt(document.getElementById(`c-${m}`).value);
+        let nextR = r, nextC = c, nextM = m;
+
+        switch(e.key) {
+            case 'ArrowRight': if (c < maxC - 1) nextC++; else { const nextIdx = matrixNames.indexOf(m) + 1; if (nextIdx < matrixNames.length) { nextM = matrixNames[nextIdx]; nextR = r; nextC = 0; } } break;
+            case 'ArrowLeft': if (c > 0) nextC--; else { const prevIdx = matrixNames.indexOf(m) - 1; if (prevIdx >= 0) { nextM = matrixNames[prevIdx]; nextR = r; nextC = parseInt(document.getElementById(`c-${nextM}`).value) - 1; } } break;
+            case 'ArrowDown': if (r < maxR - 1) nextR++; break;
+            case 'ArrowUp': if (r > 0) nextR--; break;
+            case 'Enter': executeOp(); return;
+            default: return;
+        }
+        const target = document.querySelector(`input[data-m="${nextM}"][data-r="${nextR}"][data-c="${nextC}"]`);
+        if (target) { e.preventDefault(); target.focus(); target.select(); }
+    });
+    
+    function syncSelectors(val) {
+        const sBasic = document.getElementById('basic-select');
+        const sGraph = document.getElementById('graph-select');
+        
+        if (sBasic) sBasic.value = val;
+        if (sGraph) sGraph.value = val;
+        
+        updateUI(); // Esto actualizará tanto los textos como la gráfica
     }
 
-    // Buscar la celda destino
-    const target = document.querySelector(`input[data-m="${nextM}"][data-r="${nextR}"][data-c="${nextC}"]`);
-    if (target) {
-        e.preventDefault(); // Evita que el cursor se mueva dentro del texto
-        target.focus();
-        target.select(); // Selecciona el texto para sobreescribir rápido (muy pro)
-    }
-});
-
-    window.onload = () => { addNewMatrix("A"); addNewMatrix("B"); };
+    window.onload = () => { 
+        addNewMatrix("A"); 
+        addNewMatrix("B"); 
+        
+        // Esto asegura que el selector de abajo también mande órdenes al de arriba
+        const gSelect = document.getElementById('graph-select');
+        if (gSelect) {
+            gSelect.onchange = (e) => syncSelectors(e.target.value);
+        }
+        
+        syncSelectors("A");
+    };
 </script>
 </body>
 </html>
