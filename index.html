@@ -179,6 +179,15 @@
 }
         @media (max-width: 800px) { .dashboard { grid-template-columns: 1fr; } #plot { height: 350px; } }
  
+ .matrix-manager { 
+    display: flex;            /* Cambiamos de grid a flex para poder centrar */
+    flex-wrap: wrap;         /* Si agregas muchas, bajan a la siguiente fila */
+    justify-content: center;   /* ESTO centra las matrices en pantalla */
+    align-items: flex-start;  /* Las alinea por la parte de arriba */
+    gap: 25px;                /* Espacio de separación entre tarjetas */
+    margin-bottom: 30px; 
+    width: 100%;              /* Asegura que use todo el ancho para calcular el centro */
+}
     
     </style>
 </head>
