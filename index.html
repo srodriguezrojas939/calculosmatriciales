@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cálculo Matriciales - √(Raiz) Cuadrada²</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Open+Sans:wght@400;600&display=swap');
 
@@ -242,18 +243,24 @@
     }
 
     function renderGrid(letter) {
-        const r = document.getElementById(`r-${letter}`).value;
-        const c = document.getElementById(`c-${letter}`).value;
-        const grid = document.getElementById(`grid-${letter}`);
-        grid.style.gridTemplateColumns = `repeat(${c}, 1fr)`;
-        let html = '';
-        for (let i = 0; i < r * c; i++) {
-            let val = (i % (parseInt(c)+1) === 0) ? 1 : 0;
-            html += `<input type="text" value="${val}" class="val-${letter}" onchange="updateUI()">`;
+    const r = parseInt(document.getElementById(`r-${letter}`).value);
+    const c = parseInt(document.getElementById(`c-${letter}`).value);
+    const grid = document.getElementById(`grid-${letter}`);
+    grid.style.gridTemplateColumns = `repeat(${c}, 1fr)`;
+    
+    let html = '';
+    for (let i = 0; i < r; i++) {
+        for (let j = 0; j < c; j++) {
+            let val = (i === j) ? 1 : 0; // Identidad por defecto
+            // Añadimos data-r (fila), data-c (columna) y data-m (matriz)
+            html += `<input type="text" value="${val}" class="val-${letter}" 
+                     data-m="${letter}" data-r="${i}" data-c="${j}" 
+                     onchange="updateUI()">`;
         }
-        grid.innerHTML = html;
-        updateUI();
     }
+    grid.innerHTML = html;
+    updateUI();
+}
 
     function getMatrix(letter) {
         if (!matrixNames.includes(letter)) return null;
@@ -435,6 +442,60 @@
         await Plotly.downloadImage(plot, { format: 'png', width: 1200, height: 900, filename: 'analisis_matricial' });
         Plotly.relayout(plot, { 'annotations[0].font.size': 16, 'annotations[0].font.color': '#ddd' });
     }
+
+document.addEventListener('keydown', function(e) {
+    const active = document.activeElement;
+    if (active.tagName !== 'INPUT' || !active.hasAttribute('data-m')) return;
+
+    const m = active.getAttribute('data-m');
+    let r = parseInt(active.getAttribute('data-r'));
+    let c = parseInt(active.getAttribute('data-c'));
+    const maxR = parseInt(document.getElementById(`r-${m}`).value);
+    const maxC = parseInt(document.getElementById(`c-${m}`).value);
+
+    let nextR = r, nextC = c, nextM = m;
+
+    switch(e.key) {
+        case 'ArrowRight':
+            if (c < maxC - 1) nextC++;
+            else { // Salto a la siguiente matriz si existe
+                const nextIdx = matrixNames.indexOf(m) + 1;
+                if (nextIdx < matrixNames.length) {
+                    nextM = matrixNames[nextIdx];
+                    nextR = r; nextC = 0;
+                }
+            }
+            break;
+        case 'ArrowLeft':
+            if (c > 0) nextC--;
+            else { // Salto a la matriz anterior
+                const prevIdx = matrixNames.indexOf(m) - 1;
+                if (prevIdx >= 0) {
+                    nextM = matrixNames[prevIdx];
+                    nextR = r; nextC = parseInt(document.getElementById(`c-${nextM}`).value) - 1;
+                }
+            }
+            break;
+        case 'ArrowDown':
+            if (r < maxR - 1) nextR++;
+            break;
+        case 'ArrowUp':
+            if (r > 0) nextR--;
+            break;
+        case 'Enter':
+            executeOp(); // Ejecuta la operación al dar Enter
+            return;
+        default: return;
+    }
+
+    // Buscar la celda destino
+    const target = document.querySelector(`input[data-m="${nextM}"][data-r="${nextR}"][data-c="${nextC}"]`);
+    if (target) {
+        e.preventDefault(); // Evita que el cursor se mueva dentro del texto
+        target.focus();
+        target.select(); // Selecciona el texto para sobreescribir rápido (muy pro)
+    }
+});
 
     window.onload = () => { addNewMatrix("A"); addNewMatrix("B"); };
 </script>
