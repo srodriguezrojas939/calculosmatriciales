@@ -232,6 +232,10 @@
     <div id="op-result-math" style="min-height: 80px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; background: #fdfdfd; border-radius: 20px; border: 1px dashed #ddd; overflow-x: auto; padding: 10px;">
         <span style="color: #ccc;">Esperando resultado...</span>
     </div>
+    
+    <div id="op-result-fractions" style="font-family:monospace; background:#f9f9f9; padding:15px; border-radius:15px; font-size:13px; border: 1px solid #eee; display:none; white-space: pre-wrap;">
+    </div>
+    
     <div id="op-content" class="res-content" style="display: none;"></div>
 </div>
     </div>
@@ -339,6 +343,25 @@
 </div>
 
 <script>
+    
+    function decToFrac(val) {
+    if (val === null || val === undefined || isNaN(val)) return "0";
+    if (Math.abs(val) < 1e-10) return "0";
+    if (Number.isInteger(val)) return val.toString();
+    
+    let x = val;
+    let tolerance = 1.0E-6;
+    let h1 = 1, h2 = 0, k1 = 0, k2 = 1;
+    let b = x;
+    do {
+        let a = Math.floor(b);
+        let aux = h1; h1 = a * h1 + h2; h2 = aux;
+        aux = k1; k1 = a * k1 + k2; k2 = aux;
+        b = 1 / (b - a);
+    } while (Math.abs(x - h1 / k1) > Math.abs(x) * tolerance);
+
+    return k1 === 1 ? `${h1}` : `${h1}/${k1}`;
+}
     let matrixNames = [];
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     let lastResult = null;
@@ -502,63 +525,77 @@
     }
     return res;
 }
+// --- EJECUCIÓN ---
+function executeOp() {
+    const input = document.getElementById('op-input').value.trim();
+    const outMath = document.getElementById('op-result-math');
+    // --- ADICIÓN: Referencia al cuadro de fracciones ---
+    const fracDiv = document.getElementById('op-result-fractions');
+    // ---------------------------------------------------
+    
+    if (!input) return;
 
-    // --- EJECUCIÓN ---
- function executeOp() {
-        const input = document.getElementById('op-input').value.trim();
-        const outMath = document.getElementById('op-result-math');
-        if (!input) return;
-
-        try {
-            const expr = translateExpr(input);
-            const scope = {};
-            matrixNames.forEach(name => { scope[name] = getMatrix(name); });
-            
-            const evalInScope = new Function('MathLib', 'matrices', `
-                const { ${matrixNames.join(',')} } = matrices;
-                return ${expr};
-            `);
-
-            const result = evalInScope(MathLib, scope);
-            let latexResult = "";
-
-            if (Array.isArray(result)) {
-                lastResult = result;
-                latexResult = "\\text{Resultado} = \\begin{pmatrix}";
-                result.forEach(row => {
-                    latexResult += row.map(v => typeof v === 'number' ? v.toFixed(2).replace('.00', '') : v).join(' & ') + ' \\\\ ';
-                });
-                latexResult += "\\end{pmatrix}";
-                
-                // --- ADICIÓN PARA ACTUALIZAR ANÁLISIS ---
-                if (typeof syncSelectors === 'function') syncSelectors("RES");
-                // ----------------------------------------
-
-            } else if (typeof result === 'number') {
-                // --- ADICIÓN: LIMPIAR RESULTADO ANTERIOR SI ES SÓLO UN NÚMERO ---
-                lastResult = null; 
-                // ---------------------------------------------------------------
-                
-                latexResult = `\\text{Resultado numérico} = ${result.toFixed(4).replace(/\.?0+$/, "")}`;
-                
-                // --- ADICIÓN PARA ACTUALIZAR ANÁLISIS ---
-                if (typeof syncSelectors === 'function') syncSelectors("RES");
-                // ----------------------------------------
-
-            } else {
-                lastResult = null;
-                latexResult = `\\text{${result}}`;
-            }
-
-            katex.render(latexResult, outMath, { throwOnError: false, displayMode: true });
-        } catch (e) {
-            outMath.innerHTML = `<span style="color:red; font-size:14px;">Error: Verifica dimensiones (ej: A*B requiere filas=cols) o sintaxis.</span>`;
-        }
+    try {
+        const expr = translateExpr(input);
+        const scope = {};
+        matrixNames.forEach(name => { scope[name] = getMatrix(name); });
         
-        // Esto asegura que la interfaz se refresque
-        updateUI();
-    }
+        const evalInScope = new Function('MathLib', 'matrices', `
+            const { ${matrixNames.join(',')} } = matrices;
+            return ${expr};
+        `);
 
+        const result = evalInScope(MathLib, scope);
+        let latexResult = "";
+
+        // --- ADICIÓN: Resetear cuadro de fracciones ---
+        if (fracDiv) { fracDiv.innerHTML = ""; fracDiv.style.display = "none"; }
+        // ----------------------------------------------
+
+        if (Array.isArray(result)) {
+            lastResult = result;
+            latexResult = "\\text{Resultado} = \\begin{pmatrix}";
+            result.forEach(row => {
+                latexResult += row.map(v => typeof v === 'number' ? v.toFixed(2).replace('.00', '') : v).join(' & ') + ' \\\\ ';
+            });
+            latexResult += "\\end{pmatrix}";
+            
+            // --- ADICIÓN: Mostrar fracciones estilo "Inversa" ---
+            if (fracDiv) {
+                const fracRows = result.map(r => `[${r.map(v => decToFrac(v)).join(' | ')}]`);
+                fracDiv.innerHTML = `<b style="display:block; margin-bottom:5px; color:#666;">Resultado en Fracciones:</b>` + fracRows.join('<br>');
+                fracDiv.style.display = "block";
+            }
+            // ----------------------------------------------------
+
+            if (typeof syncSelectors === 'function') syncSelectors("RES");
+
+        } else if (typeof result === 'number') {
+            lastResult = null; 
+            latexResult = `\\text{Resultado numérico} = ${result.toFixed(4).replace(/\.?0+$/, "")}`;
+            
+            // --- ADICIÓN: Mostrar valor exacto ---
+            if (fracDiv) {
+                fracDiv.innerHTML = `<b style="display:block; margin-bottom:5px; color:#666;">Valor exacto:</b> ${decToFrac(result)}`;
+                fracDiv.style.display = "block";
+            }
+            // --------------------------------------
+
+            if (typeof syncSelectors === 'function') syncSelectors("RES");
+
+        } else {
+            lastResult = null;
+            latexResult = `\\text{${result}}`;
+        }
+
+        katex.render(latexResult, outMath, { throwOnError: false, displayMode: true });
+    } catch (e) {
+        if (fracDiv) fracDiv.style.display = "none";
+        outMath.innerHTML = `<span style="color:red; font-size:14px;">Error: Verifica dimensiones (ej: A*B requiere filas=cols) o sintaxis.</span>`;
+    }
+    
+    updateUI();
+}
     // --- GRÁFICAS (RECUPERADAS) ---
     function drawGraph(m, type) {
         const traces = [];
@@ -584,24 +621,26 @@
     }
 
     // --- INTERFAZ Y VISUALIZACIÓN ---
-    function updateUI() {
-        const target = document.getElementById('basic-select').value || "A";
-        const type = document.getElementById('graph-type').value;
-        let data = (target === "RES") ? lastResult : getMatrix(target);
-        
-        if (data && Array.isArray(data)) {
-            const d = MathLib.det(data);
-            document.getElementById('basic-content').innerHTML = `
-                <div style="margin-bottom:8px;"><b>Determinante:</b> ${d !== null ? d.toFixed(2) : 'N/A'}</div>
-                <div style="margin-bottom:8px;"><b>Rango:</b> ${MathLib.rank(data)}</div>
-                <div style="margin-top:10px;"><b>Inversa:</b></div>
-                <div style="font-family:monospace; background:#f9f9f9; padding:10px; border-radius:15px; margin-top:5px; font-size:12px; border: 1px solid #eee;">
-                    ${MathLib.inv(data) ? MathLib.inv(data).map(r => `[${r.map(v=>v.toFixed(1)).join('|')}]`).join('<br>') : 'No existe'}
-                </div>
-            `;
-            drawGraph(data, type);
-        }
+   function updateUI() {
+    const target = document.getElementById('basic-select').value || "A";
+    const type = document.getElementById('graph-type').value;
+    let data = (target === "RES") ? lastResult : getMatrix(target);
+    
+    if (data && Array.isArray(data)) {
+        const d = MathLib.det(data);
+        const invData = MathLib.inv(data); // Calculamos la inversa una vez para eficiencia
+
+        document.getElementById('basic-content').innerHTML = `
+            <div style="margin-bottom:8px;"><b>Determinante:</b> ${d !== null ? decToFrac(d) : 'N/A'}</div>
+            <div style="margin-bottom:8px;"><b>Rango:</b> ${MathLib.rank(data)}</div>
+            <div style="margin-top:10px;"><b>Inversa:</b></div>
+            <div style="font-family:monospace; background:#f9f9f9; padding:10px; border-radius:15px; margin-top:5px; font-size:12px; border: 1px solid #eee;">
+                ${invData ? invData.map(r => `[${r.map(v => decToFrac(v)).join('|')}]`).join('<br>') : 'No existe'}
+            </div>
+        `;
+        drawGraph(data, type);
     }
+}
 
     function updateSelectOptions() {
         const sBasic = document.getElementById('basic-select');
