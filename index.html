@@ -80,10 +80,16 @@
     </div>
 
     <div class="dashboard">
-        <div class="res-card">
-            <h2 id="basic-title">Datos Básicos: A</h2>
-            <div id="basic-content" class="res-content">Selecciona una matriz...</div>
+   <div class="res-card">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
+        <h2 style="margin: 0; border: none; padding: 0; font-size: 20px;">Datos Básicos:</h2>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight: 600; font-size: 13px;">Analizar:</span>
+            <select id="basic-select" class="pill-input" style="width: auto; padding: 5px 12px; font-size: 13px;" onchange="syncSelectors(this.value)"></select>
         </div>
+    </div>
+    <div id="basic-content" class="res-content">Cargando datos...</div>
+</div>
         <div class="res-card highlight">
             <h2>Resultado de Operación</h2>
             <div id="op-content" class="res-content">Esperando comando...</div>
@@ -359,22 +365,7 @@
     }
 
     // --- GRÁFICAS ---
-    function updateUI() {
-        const target = document.getElementById('graph-select').value;
-        const type = document.getElementById('graph-type').value;
-        let data = (target === "RES") ? lastResult : getMatrix(target || "A");
-
-        if (data && target !== "RES") {
-            const d = MathLib.det(data);
-            document.getElementById('basic-title').innerText = `Datos Básicos: ${target}`;
-            document.getElementById('basic-content').innerHTML = `
-                Det: ${d !== null ? d.toFixed(2) : 'N/A'} | Rango: ${MathLib.rank(data)}<br>
-                Inversa:<br>${MathLib.inv(data) ? MathLib.inv(data).map(r => `[${r.map(v=>v.toFixed(1)).join('|')}]`).join('<br>') : 'No existe'}
-            `;
-        }
-        if (data) drawGraph(data, type);
-    }
-
+   
     function drawGraph(m, type) {
         const traces = [];
         const layout = { 
@@ -424,12 +415,53 @@
         Plotly.newPlot('plot', traces, layout, {responsive: true, displayModeBar: false});
     }
 
-    function updateSelectOptions() {
-        const s = document.getElementById('graph-select');
-        const val = s.value;
-        s.innerHTML = matrixNames.map(n => `<option value="${n}">Matriz ${n}</option>`).join('') + `<option value="RES">Resultado</option>`;
-        if (matrixNames.includes(val) || val === "RES") s.value = val;
+   function updateSelectOptions() {
+    const sBasic = document.getElementById('basic-select');
+    const sGraph = document.getElementById('graph-select');
+    
+    // Mantener el valor actual o poner "A" por defecto si es la primera vez
+    let currentVal = sBasic.value || "A";
+
+    const options = matrixNames.map(n => `<option value="${n}">Matriz ${n}</option>`).join('') + `<option value="RES">Resultado</option>`;
+    
+    sBasic.innerHTML = options;
+    sGraph.innerHTML = options;
+
+    sBasic.value = currentVal;
+    sGraph.value = currentVal;
+}
+
+function syncSelectors(val) {
+    document.getElementById('basic-select').value = val;
+    document.getElementById('graph-select').value = val;
+    updateUI();
+}
+
+function updateUI() {
+    const target = document.getElementById('basic-select').value || "A";
+    const type = document.getElementById('graph-type').value;
+    let data = (target === "RES") ? lastResult : getMatrix(target);
+
+    if (data && Array.isArray(data)) {
+        const d = MathLib.det(data);
+        document.getElementById('basic-content').innerHTML = `
+            <div style="margin-bottom:8px;"><b>Determinante:</b> ${d !== null ? d.toFixed(2) : 'N/A'}</div>
+            <div style="margin-bottom:8px;"><b>Rango:</b> ${MathLib.rank(data)}</div>
+            <div style="margin-top:10px;"><b>Inversa:</b></div>
+            <div style="font-family:monospace; background:#f9f9f9; padding:10px; border-radius:15px; margin-top:5px; font-size:12px; border: 1px solid #eee;">
+                ${MathLib.inv(data) ? MathLib.inv(data).map(r => `[${r.map(v=>v.toFixed(1)).join('|')}]`).join('<br>') : 'No existe'}
+            </div>
+        `;
+        drawGraph(data, type);
     }
+}
+
+// AL CARGAR LA PÁGINA: Forzar selección de "A"
+window.onload = () => { 
+    addNewMatrix("A"); 
+    addNewMatrix("B"); 
+    syncSelectors("A"); // Esto garantiza que al abrir todo esté en Matriz A
+};
 
     function toggleGuide() {
         const g = document.getElementById('guide-section');
